@@ -249,7 +249,7 @@
         // Musik Variablen
         const bgMusic = document.getElementById("bg-music");
         const musicToggleBtn = document.getElementById("music-toggle");
-        let isMusicPlaying = true; // Musik soll standardmäßig AN sein
+        let isMusicPlaying = true; 
 
         // Configuration
         const canvasWidth = 375;
@@ -288,10 +288,10 @@
         const restartButton = document.getElementById("restart");
         const scoreElement = document.getElementById("score");
 
-        // Musik Toggle Logik
+        // Musik Toggle Logik (Abgesichert gegen Ghost Clicks)
         function toggleMusic(e) {
             e.preventDefault();
-            e.stopPropagation(); // Verhindert, dass man beim Klicken eine Brücke baut
+            e.stopPropagation(); 
             
             if (isMusicPlaying) {
                 bgMusic.pause();
@@ -299,12 +299,16 @@
                 musicToggleBtn.innerText = "🔇 Musik: OFF";
                 musicToggleBtn.style.opacity = "0.6";
             } else {
-                bgMusic.play();
+                let playPromise = bgMusic.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => console.log("Musik konnte nicht gestartet werden.", error));
+                }
                 isMusicPlaying = true;
                 musicToggleBtn.innerText = "🎵 Musik: ON";
                 musicToggleBtn.style.opacity = "1";
             }
         }
+        
         musicToggleBtn.addEventListener("click", toggleMusic);
         musicToggleBtn.addEventListener("touchstart", toggleMusic);
 
@@ -312,18 +316,24 @@
         const startMenuBtn = document.getElementById("btn-start-game");
         const startMenu = document.getElementById("start-menu");
 
+        // WICHTIG FÜR HANDYS: Nur noch das echte "click" Event nutzen, um die Audio-Sperre zu knacken!
         startMenuBtn.addEventListener("click", function(e) {
             e.stopPropagation();
             startMenu.style.display = "none";
             isGameReady = true;
-            if (isMusicPlaying) bgMusic.play(); // Startet Musik
-        });
-        startMenuBtn.addEventListener("touchstart", function(e) {
-            e.preventDefault(); 
-            e.stopPropagation();
-            startMenu.style.display = "none";
-            isGameReady = true;
-            if (isMusicPlaying) bgMusic.play(); // Startet Musik
+            
+            if (isMusicPlaying) {
+                let playPromise = bgMusic.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("Handy blockiert Autoplay - setze auf OFF", error);
+                        // Fallback, falls der Browser trotzdem meckert
+                        isMusicPlaying = false;
+                        musicToggleBtn.innerText = "🔇 Musik: OFF";
+                        musicToggleBtn.style.opacity = "0.6";
+                    });
+                }
+            }
         });
 
         // Initialize layout
