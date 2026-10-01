@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ninja Hero - GC Finale</title>
+    <title>Ninja Hero</title>
     
     <style>
         html,
         body {
           height: 100%;
           margin: 0;
-          overflow: hidden; /* Verhindert Scrollen auf dem Handy */
+          overflow: hidden; 
         }
 
         body {
           font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
           cursor: pointer;
-          background-color: #1a1a1a; /* Schutz-Hintergrundfarbe */
-          user-select: none; /* Verhindert Textmarkierung auf Handys */
+          background-color: #1a1a1a; 
+          user-select: none; 
         }
 
         .container {
@@ -34,8 +34,8 @@
           left: 50%;
           transform: translate(-50%, -50%);
           z-index: 5;
-          opacity: 0.08; /* Sehr sanft */
-          pointer-events: none; /* WICHTIG: Klicks gehen durch das Bild hindurch! */
+          opacity: 0.08; 
+          pointer-events: none; 
         }
         #watermark img {
           max-width: 80vw;
@@ -52,7 +52,7 @@
           left: 0;
           width: 100%;
           height: 100%;
-          background: #1a1a1a; /* Komplett blickdicht */
+          background: #1a1a1a; 
           z-index: 1000;
           display: flex;
           flex-direction: column;
@@ -61,16 +61,16 @@
           text-align: center;
         }
         #start-menu img {
-          width: 180px; /* Wieder schön groß */
-          height: auto; /* Passt die Höhe automatisch ans Bild an (kein Abschneiden mehr!) */
+          width: 180px; 
+          height: auto; 
           max-height: 250px; 
           border-radius: 15px;
-          object-fit: contain; /* Zeigt das Bild vollständig */
+          object-fit: contain; 
           margin-bottom: 25px;
-          background-color: #2ecc71; /* Grüner Hintergrund */
+          background-color: #2ecc71; 
           border: 3px solid #2ecc71;
           box-shadow: 0 0 30px rgba(46, 204, 113, 0.5);
-          padding: 5px; /* Gibt dem Bild einen schönen grünen Innenrahmen */
+          padding: 5px; 
         }
         #start-menu h1 {
           color: #2ecc71;
@@ -169,7 +169,7 @@
       <div id="score">0</div>
       <canvas id="game"></canvas>
       <div id="introduction">
-          Halte den Bildschirm oder linke Maustaste gedrückt, um die Brücke zu bauen.<br><br>
+          Halte den Bildschirm gedrückt, um die Brücke zu bauen.<br><br>
           <span style="color: #e74c3c; font-weight: bold;">ZIEL: 15 PUNKTE</span>
       </div>
       <div id="perfect">PERFEKT! +2</div>
@@ -215,6 +215,7 @@
         let score = 0;
         let cacheKnacked = false;
         let isGameReady = false; 
+        let inputLocked = false; // <-- NEU: Verhindert sofortiges Bauen nach Neustart
 
         // Configuration
         const canvasWidth = 375;
@@ -257,12 +258,14 @@
         const startMenuBtn = document.getElementById("btn-start-game");
         const startMenu = document.getElementById("start-menu");
 
-        startMenuBtn.addEventListener("click", function() {
+        startMenuBtn.addEventListener("click", function(e) {
+            e.stopPropagation();
             startMenu.style.display = "none";
             isGameReady = true;
         });
         startMenuBtn.addEventListener("touchstart", function(e) {
             e.preventDefault(); 
+            e.stopPropagation();
             startMenu.style.display = "none";
             isGameReady = true;
         });
@@ -275,6 +278,9 @@
           lastTimestamp = undefined;
           sceneOffset = 0;
           score = 0;
+          
+          inputLocked = true; // Bildschirm kurz sperren
+          setTimeout(() => { inputLocked = false; }, 300); // Nach 0.3 Sekunden wieder freigeben
 
           introductionElement.style.opacity = 1;
           perfectElement.style.opacity = 0;
@@ -331,7 +337,7 @@
         window.addEventListener("touchend", handleEnd);
 
         function handleStart(event) {
-          if (!isGameReady) return; 
+          if (!isGameReady || inputLocked) return; // <-- NEU: Blockiert Eingabe, wenn inputLocked aktiv ist
           if (event.type === 'touchstart') event.preventDefault();
           
           if (phase == "waiting") {
@@ -343,7 +349,7 @@
         }
 
         function handleEnd(event) {
-          if (!isGameReady) return;
+          if (!isGameReady || inputLocked) return;
           if (phase == "stretching") {
             phase = "turning";
           }
@@ -501,12 +507,14 @@
 
         restartButton.addEventListener("click", function (event) {
           event.preventDefault();
+          event.stopPropagation(); // <-- NEU: Verhindert Klick-Durchrutschen
           resetGame();
           restartButton.style.display = "none";
         });
         
         restartButton.addEventListener("touchstart", function (event) {
           event.preventDefault();
+          event.stopPropagation(); // <-- NEU: Verhindert Touch-Durchrutschen
           resetGame();
           restartButton.style.display = "none";
         });
