@@ -45,6 +45,29 @@
         }
         /* ENDE: Wasserzeichen */
 
+        /* START: Musik Button */
+        #music-toggle {
+          position: absolute;
+          top: 30px;
+          left: 30px;
+          background: rgba(255, 255, 255, 0.2);
+          color: white;
+          border: 1px solid rgba(255, 255, 255, 0.5);
+          padding: 8px 15px;
+          border-radius: 20px;
+          font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+          font-size: 1em;
+          font-weight: bold;
+          cursor: pointer;
+          z-index: 30;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+          transition: all 0.3s ease;
+        }
+        #music-toggle:hover {
+          background: rgba(255, 255, 255, 0.4);
+        }
+        /* ENDE: Musik Button */
+
         /* START: Startmenü */
         #start-menu {
           position: fixed;
@@ -152,6 +175,12 @@
 </head>
 <body>
 
+    <!-- Versteckter Audio-Player für die Hintergrundmusik -->
+    <audio id="bg-music" src="music.mp3" loop preload="auto"></audio>
+
+    <!-- Sichtbarer Button zum Ein/Ausschalten der Musik -->
+    <button id="music-toggle">🎵 Musik: ON</button>
+
     <!-- START: Startmenü Overlay -->
     <div id="start-menu">
         <img src="avatar.jpg" alt="Avatar">
@@ -170,7 +199,6 @@
       <canvas id="game"></canvas>
       <div id="introduction">
           Halte den Bildschirm gedrückt, um die Brücke zu bauen.<br><br>
-          <!-- ZIEL AUF 15 ANGEPASST -->
           <span style="color: #e74c3c; font-weight: bold;">ZIEL: 20 PUNKTE</span>
       </div>
       <div id="perfect">PERFEKT! +2</div>
@@ -216,7 +244,12 @@
         let score = 0;
         let cacheKnacked = false;
         let isGameReady = false; 
-        let lastRestartTime = 0; // <-- NEU: Zeiterfassung für Restart
+        let lastRestartTime = 0; 
+
+        // Musik Variablen
+        const bgMusic = document.getElementById("bg-music");
+        const musicToggleBtn = document.getElementById("music-toggle");
+        let isMusicPlaying = true; // Musik soll standardmäßig AN sein
 
         // Configuration
         const canvasWidth = 375;
@@ -255,7 +288,27 @@
         const restartButton = document.getElementById("restart");
         const scoreElement = document.getElementById("score");
 
-        // UI-Steuerung für das Startmenü
+        // Musik Toggle Logik
+        function toggleMusic(e) {
+            e.preventDefault();
+            e.stopPropagation(); // Verhindert, dass man beim Klicken eine Brücke baut
+            
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                isMusicPlaying = false;
+                musicToggleBtn.innerText = "🔇 Musik: OFF";
+                musicToggleBtn.style.opacity = "0.6";
+            } else {
+                bgMusic.play();
+                isMusicPlaying = true;
+                musicToggleBtn.innerText = "🎵 Musik: ON";
+                musicToggleBtn.style.opacity = "1";
+            }
+        }
+        musicToggleBtn.addEventListener("click", toggleMusic);
+        musicToggleBtn.addEventListener("touchstart", toggleMusic);
+
+        // UI-Steuerung für das Startmenü & Musikstart
         const startMenuBtn = document.getElementById("btn-start-game");
         const startMenu = document.getElementById("start-menu");
 
@@ -263,12 +316,14 @@
             e.stopPropagation();
             startMenu.style.display = "none";
             isGameReady = true;
+            if (isMusicPlaying) bgMusic.play(); // Startet Musik
         });
         startMenuBtn.addEventListener("touchstart", function(e) {
             e.preventDefault(); 
             e.stopPropagation();
             startMenu.style.display = "none";
             isGameReady = true;
+            if (isMusicPlaying) bgMusic.play(); // Startet Musik
         });
 
         // Initialize layout
@@ -280,7 +335,7 @@
           sceneOffset = 0;
           score = 0;
           
-          lastRestartTime = Date.now(); // <-- Speichert die exakte Zeit des Neustarts
+          lastRestartTime = Date.now();
 
           introductionElement.style.opacity = 1;
           perfectElement.style.opacity = 0;
@@ -338,9 +393,6 @@
 
         function handleStart(event) {
           if (!isGameReady) return; 
-          
-          // <-- NEU: Blockiert gnadenlos alle Eingaben für 0,5 Sekunden nach dem Neustart
-          // Das tötet jeden "Ghost Click" des Handys ab.
           if (Date.now() - lastRestartTime < 500) return; 
           
           if (event.type === 'touchstart') event.preventDefault();
@@ -355,7 +407,7 @@
 
         function handleEnd(event) {
           if (!isGameReady) return;
-          if (Date.now() - lastRestartTime < 500) return; // Greift auch hier als Sicherheit
+          if (Date.now() - lastRestartTime < 500) return; 
           
           if (phase == "stretching") {
             phase = "turning";
@@ -400,7 +452,6 @@
                     setTimeout(() => (perfectElement.style.opacity = 0), 1000);
                   }
 
-                  // === GEOCACHING ZIEL ÜBERPRÜFUNG (15 PUNKTE) ===
                   if (score >= 20 && !cacheKnacked) {
                       cacheKnacked = true;
                       
